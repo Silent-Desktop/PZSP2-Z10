@@ -7,7 +7,7 @@ from jaxtyping import Bool, Float, jaxtyped
 from pydantic import computed_field
 from torch import Tensor
 import torch
-import beartype
+from beartype import beartype
 
 from net_opt.utiils.torch_utils import multi_triu
 
