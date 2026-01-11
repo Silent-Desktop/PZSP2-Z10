@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Adam Szokalski", email = "szokalskiadam@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "amplpy>=0.16.0",
     "beartype>=0.22.9",
