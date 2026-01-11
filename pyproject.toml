@@ -1,0 +1,40 @@
+[project]
+name = "net_opt"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Adam Szokalski", email = "szokalskiadam@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "amplpy>=0.16.0",
+    "beartype>=0.22.9",
+    "jaxtyping>=0.3.5",
+    "matplotlib>=3.10.8",
+    "matplotlib-inline>=0.2.1",
+    "networkx>=3.6.1",
+    "numpy>=2.4.0",
+    "pandas>=2.3.3",
+    "pydantic>=2.12.5",
+    "scikit-learn>=1.8.0",
+    "torch>=2.9.1",
+]
+
+[project.scripts]
+net_opt = "net_opt:main"
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.ruff]
+extend-ignore = [
+    "F722", # Wrokaround: https://docs.kidger.site/jaxtyping/faq/
+    "F821", # Wrokaround: https://docs.kidger.site/jaxtyping/faq/
+]
