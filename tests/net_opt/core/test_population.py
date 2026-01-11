@@ -24,7 +24,7 @@ class TestPopulation:
             assert torch.all(res_bw[:, :, :, i, i] == 0.0)
             
             # Off diagonal
-            if i > 0:
+            if i > 0:   
                 assert torch.all(res_bw[:, :, :, i, i-1] == 1.0)
 
     def test_masked_method_transponders(self, sample_data):

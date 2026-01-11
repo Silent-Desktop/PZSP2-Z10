@@ -31,3 +31,9 @@ build-backend = "uv_build"
 dev = [
     "pytest>=9.0.2",
 ]
+
+[tool.ruff]
+extend-ignore = [
+    "F722", # Wrokaround: https://docs.kidger.site/jaxtyping/faq/
+    "F821", # Wrokaround: https://docs.kidger.site/jaxtyping/faq/
+]

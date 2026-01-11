@@ -1,7 +1,3 @@
-# ruff: noqa: F722
-# ruff: noqa: F821
-# Above from: https://docs.kidger.site/jaxtyping/faq/
-
 from typing import NamedTuple
 from jaxtyping import Bool, Float, jaxtyped
 from pydantic import computed_field
