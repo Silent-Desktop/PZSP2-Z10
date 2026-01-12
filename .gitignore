@@ -215,6 +215,3 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
-
-# UV lock
-uv.lock
