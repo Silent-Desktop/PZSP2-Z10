@@ -3,9 +3,7 @@ name = "net_opt"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-authors = [
-    { name = "Adam Szokalski", email = "szokalskiadam@gmail.com" }
-]
+authors = [{ name = "Adam Szokalski", email = "szokalskiadam@gmail.com" }]
 requires-python = ">=3.12"
 dependencies = [
     "ampl-module-base>=20250901",
@@ -32,16 +30,14 @@ requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-]
+dev = ["pytest>=9.0.2", "ruff>=0.14.0"]
 
 [[tool.uv.index]]
 name = "ampl"
 url = "https://pypi.ampl.com/"
 
 [tool.ruff]
-extend-ignore = [
+lint.extend-ignore = [
     "F722", # Wrokaround: https://docs.kidger.site/jaxtyping/faq/
     "F821", # Wrokaround: https://docs.kidger.site/jaxtyping/faq/
 ]
