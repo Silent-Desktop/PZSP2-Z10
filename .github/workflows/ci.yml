@@ -20,8 +20,16 @@ jobs:
             - name: Install uv
               run: pip install uv
 
+            - name: Cache uv dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/uv
+                  key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+                  restore-keys: |
+                      uv-${{ runner.os }}-
+
             - name: Sync dependencies
-              run: uv sync
+              run: uv sync --frozen
 
             - name: Lint with ruff
               run: uv run ruff check src exploration/notebooks/2-tensor-evo-with-lib.ipynb tests
