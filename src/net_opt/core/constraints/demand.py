@@ -21,9 +21,9 @@ class Demand(Constraint):
         #relu to cut negative scores. If the coverage >= demand -> score = 0
         return self._calculate_similarity_scores_all(demand_per_individual, path_coverage, diff_transform=torch.relu)
 
-    def _calc(self, population, transponder_capacities, demand):
-        t = population.path_transponder_assignment #(P, N, N, T)
+    def _calc(self, population: Population, transponder_capacities: Float[Tensor, "T"], demand: Float[Tensor, "N N"]):
+        t = population.path_transponder_assignment #(P, T, N, N)
         P = t.size(0)
-        path_coverage = t @ transponder_capacities # (P, N, N, T) @ (T,) -> (P, N, N)
+        path_coverage = t.permute(0,2,3,1) @ transponder_capacities # (P, N, N, T) @ (T,) -> (P, N, N)
         demand_per_individual = demand.unsqueeze(0).expand(P, -1, -1)
         return demand_per_individual, path_coverage

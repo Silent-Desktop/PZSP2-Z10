@@ -26,7 +26,7 @@ class GeneMutation(Mutation, BaseModel):
     path_edge_bandwidth_usage_mut_proba: float
     path_transponder_assignment_mut_proba: float
 
-    def mutate(self, population : Population, elite_size: int) -> Population:
+    def mutate(self, population : Population, elite_size: int, neigh_matrix: Bool[Tensor, "N N"]) -> Population:
         elite_paths = population.path_edge_bandwidth_usage[:elite_size]
         elite_transponders = population.path_transponder_assignment[:elite_size]
 
@@ -34,25 +34,20 @@ class GeneMutation(Mutation, BaseModel):
         non_elite_transponders = population.path_transponder_assignment[elite_size:]
 
         paths_mut_idx = Bernoulli(self.path_edge_bandwidth_usage_mut_proba)\
-            .sample(non_elite_paths.size())
+            .sample(non_elite_paths.size()).triu_(diagonal=1).bool() & neigh_matrix[None, :, :, None, None]
         transponders_mut_idx = Bernoulli(self.path_transponder_assignment_mut_proba)\
-            .sample(non_elite_transponders.size())
+            .sample(non_elite_transponders.size()).triu_(diagonal=1).bool()
         
-        #TODO?: Masking with idx to not calculate random for 0 indices
-        random_paths = torch.poisson(non_elite_paths).clamp(max=population.edge_size_limits)
-        random_transponders = torch.poisson(non_elite_transponders)
-   
-        mutated_paths = (1 -  paths_mut_idx) * non_elite_paths +\
-                                        paths_mut_idx * random_paths
-        mutated_transponders = (1 -  transponders_mut_idx) * non_elite_transponders +\
-                                        transponders_mut_idx * random_transponders
+        #TODO: Masking with idx to not calculate random for 0 indices   
+        non_elite_paths[paths_mut_idx] = torch.poisson(non_elite_paths[paths_mut_idx]).clamp_(max=population.edge_size_limits[None, :, :, None, None].expand_as(non_elite_paths)[paths_mut_idx])
+        non_elite_transponders[transponders_mut_idx] = torch.poisson(non_elite_transponders[transponders_mut_idx])
         
-        new_paths = torch.cat((elite_paths, mutated_paths), dim=0)
-        new_transponders = torch.cat((elite_transponders, mutated_transponders), dim=0)
-        
+        new_paths = torch.cat((elite_paths, non_elite_paths), dim=0)
+        new_transponders = torch.cat((elite_transponders, non_elite_transponders), dim=0)
         
         return Population.masked(
             encrypted_neigh_matrix=population.encrypted_neigh_matrix,
             path_edge_bandwidth_usage=new_paths,
-            path_transponder_assignment=new_transponders
+            path_transponder_assignment=new_transponders,
+            neigh_matrix=neigh_matrix,
         )

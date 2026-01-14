@@ -33,23 +33,13 @@ class UniformCrossover(Mutation, BaseModel):
         Performs uniform crossover on a single component (E, P, or T)
         for a batch of parent pairs.
         """
-        cross_mask = Bernoulli(proba).sample(parent1.size())
-
-        if parent1.dtype == torch.bool:
-            # Boolean logic: Child1 = (X & P1) | (~X & P2)
-            cross_mask = cross_mask.bool()
-            child1 = (cross_mask & parent1) | (~cross_mask & parent2)
-            child2 = (cross_mask & parent2) | (~cross_mask & parent1)
-        else:
-            # Float logic: Child1 = X * P1 + (1 - X) * P2
-            cross_mask = cross_mask.float()
-            child1 = cross_mask * parent1 + (1.0 - cross_mask) * parent2
-            child2 = cross_mask * parent2 + (1.0 - cross_mask) * parent1
-            
+        cross_mask = Bernoulli(proba).sample(parent1.size()).float()
+        child1 = cross_mask * parent1 + (1.0 - cross_mask) * parent2
+        child2 = cross_mask * parent2 + (1.0 - cross_mask) * parent1
         return child1, child2
 
     @jaxtyped(typechecker=beartype)
-    def mutate(self, population : Population, elite_size: int) -> Population:
+    def mutate(self, population : Population, elite_size: int, neigh_matrix: Bool[Tensor, "N N"]) -> Population:
         elite_paths = population.path_edge_bandwidth_usage[:elite_size]
         elite_transponders = population.path_transponder_assignment[:elite_size]
 
@@ -96,5 +86,6 @@ class UniformCrossover(Mutation, BaseModel):
         return Population.masked(
             encrypted_neigh_matrix=population.encrypted_neigh_matrix,
             path_edge_bandwidth_usage=new_paths,
-            path_transponder_assignment=new_transponders
+            path_transponder_assignment=new_transponders,
+            neigh_matrix=neigh_matrix,
         )

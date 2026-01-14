@@ -17,6 +17,6 @@ class PathBandwidthIOMatch(Constraint):
     @jaxtyped(typechecker=beartype)
     def _check_all(self, population: Population, transponder_capacities: Float[Tensor, "T"], demand: Float[Tensor, "N N"]) -> Float[Tensor, "P N N"]:
         p = population.path_edge_bandwidth_usage
-        source_output_sum = torch.einsum('pijil -> pij', p) # (P, N, N, N, N) -> (P, N, N)
-        dest_input_sum = torch.einsum('pijkj -> pij', p) # (P, N, N, N, N) -> (P, N, N)
+        source_output_sum = torch.einsum('pkjkl -> pkl', p) # (P, N, N, N, N) -> (P, N, N)
+        dest_input_sum = torch.einsum('pilkl -> pkl', p) # (P, N, N, N, N) -> (P, N, N)
         return self._calculate_similarity_scores_all(source_output_sum, dest_input_sum)

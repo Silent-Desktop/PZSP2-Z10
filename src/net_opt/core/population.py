@@ -5,12 +5,12 @@ from torch import Tensor
 import torch
 from beartype import beartype
 
-from net_opt.utiils.torch_utils import multi_triu
+from net_opt.utils.torch_utils import multi_triu
 
 class Population(NamedTuple):
     encrypted_neigh_matrix: Bool[Tensor, "N N"]
     path_edge_bandwidth_usage: Float[Tensor, "P N N N N"]
-    path_transponder_assignment: Float[Tensor, "P N N T"]
+    path_transponder_assignment: Float[Tensor, "P T N N"]
     regular_bandwidth: int = 96
     encrypted_bandwidth: int = 30
 
@@ -19,12 +19,13 @@ class Population(NamedTuple):
     def masked(cls, 
                encrypted_neigh_matrix: Bool[Tensor, "N N"],
                path_edge_bandwidth_usage: Float[Tensor, "P N N N N"],
-               path_transponder_assignment: Float[Tensor, "P N N T"]
+               path_transponder_assignment: Float[Tensor, "P T N N"],
+               neigh_matrix: Bool[Tensor, "N N"],
                ):
-        idx = torch.arange(0, path_edge_bandwidth_usage.size(1))
-        path_edge_bandwidth_usage[:, :, :, idx, idx] = 0.0
-        new_transponders_masked = multi_triu(path_transponder_assignment, dim_pairs=[(1,2)]) # (P, *N, *N, T)
-        return cls(encrypted_neigh_matrix, path_edge_bandwidth_usage, new_transponders_masked)
+        path_edge_bandwidth_usage.triu_(diagonal=1) # mask undirected node pairs
+        path_edge_bandwidth_usage[:,(~neigh_matrix),:,:] = 0.0 # mask nonexistent edges
+        path_transponder_assignment.triu_(diagonal=1) # mask undirected node pairs, (P, T, *N, *N)
+        return cls(encrypted_neigh_matrix, path_edge_bandwidth_usage, path_transponder_assignment)
     
     @computed_field
     @property

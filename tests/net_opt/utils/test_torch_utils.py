@@ -1,7 +1,7 @@
 import torch
 import pytest
 
-from net_opt.utiils.torch_utils import multi_triu
+from net_opt.utils.torch_utils import multi_triu
 
 
 

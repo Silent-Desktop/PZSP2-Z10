@@ -18,7 +18,7 @@ class PathTransponderBandwidthAtLeast(Constraint):
         p = population.path_edge_bandwidth_usage
         t = population.path_transponder_assignment
         # just check for source because PathBandwidthIOMatch ensures IO equality
-        source_output_sum = torch.einsum('pijil -> pij', p) # (P, N, N, N, N) -> (P, N, N)
-        transponder_on_path_count = t.sum(dim=3) # (P, N, N, T) -> (P, N, N)
+        source_output_sum = torch.einsum('pkjkl -> pkl', p) # (P, N, N, N, N) -> (P, N, N)
+        transponder_on_path_count = t.sum(dim=1) # (P, T, N, N) -> (P, N, N)
         # same as above, just with relu for paths >= transponders -> 0
         return self._calculate_similarity_scores_all(transponder_on_path_count, source_output_sum, diff_transform=torch.relu)

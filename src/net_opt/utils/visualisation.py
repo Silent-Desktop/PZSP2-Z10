@@ -23,17 +23,18 @@ def visualize_population_individual(
     p_usage = population.path_edge_bandwidth_usage[individual_index]
     t_assign = population.path_transponder_assignment[individual_index]
 
-    edge_bw_usage = torch.einsum("ijkl -> kl", p_usage) 
+    edge_bw_usage = torch.einsum("ijkl -> ij", p_usage) 
     edge_bw_usage += edge_bw_usage.tril(diagonal=-1).mT
     edge_bw_usage.triu_(diagonal=1)
     
-    path_capacity = t_assign @ transponder_capacities
+	# (T, N, N) -> (N, N, T) @ (T) -> (N, N)
+    path_capacity = t_assign.permute(1,2,0) @ transponder_capacities
 
-    total_trans_usage = t_assign.sum(dim=(0, 1))
+    total_trans_usage = t_assign.sum(dim=(1, 2))
 
     data_to_plot = [e_matrix, edge_bw_usage, path_capacity, total_trans_usage, transponder_capacities]
     e_np, edge_np, path_np, trans_np, caps_np = [
-        (d.cpu().detach().numpy() if d.is_cuda else d.detach().numpy()) 
+        d.cpu().numpy()
         for d in data_to_plot
     ]
     
@@ -92,19 +93,10 @@ def visualize_population_individual(
 
 @no_type_check
 def visualize_input_data(neigh_matrix: Bool[Tensor, "N N"], demand: Float[Tensor, "N N"], transponder_costs: Float[Tensor, "T"], transponder_capacities: Float[Tensor, "T"]):
-    if neigh_matrix.is_cuda:
-        neigh_matrix = neigh_matrix.cpu()
-    if demand.is_cuda:
-        demand = demand.cpu()
-    if transponder_costs.is_cuda:
-        transponder_costs = transponder_costs.cpu()
-    if transponder_capacities.is_cuda:
-        transponder_capacities = transponder_capacities.cpu()
-
-    mat_np = neigh_matrix.numpy() 
-    dem_np = demand.numpy()
-    costs_np = transponder_costs.numpy() 
-    caps_np = transponder_capacities.numpy()
+    mat_np = neigh_matrix.cpu().numpy() 
+    dem_np = demand.cpu().numpy()
+    costs_np = transponder_costs.cpu().numpy() 
+    caps_np = transponder_capacities.cpu().numpy()
     
     N = mat_np.shape[0]
     T = costs_np.shape[0]

@@ -3,6 +3,7 @@ from pydantic.config import ConfigDict
 from torch.distributions import Distribution
 import torch
 from jaxtyping import Float, Bool, jaxtyped
+from typing import Literal
 from torch import Tensor
 from beartype import beartype
 import networkx as nx
@@ -12,7 +13,7 @@ from net_opt.core.constraints.base_constraint import Constraint
 from net_opt.core.termination_conditions.base_termination_condition import TerminationCondition
 from net_opt.core.mutations.base_mutation import Mutation
 from net_opt.core.selections.base_selection import Selection
-from net_opt.utiils.visualisation import visualize_population_individual
+from net_opt.utils.visualisation import visualize_population_individual
 
 
 class EA(BaseModel):
@@ -42,10 +43,26 @@ class EA(BaseModel):
         return torch.tensor(constraint_weights, dtype=torch.float32)
     
     def _get_encrypted_MST(self) -> Bool[Tensor, "N N"]:
-        G = nx.from_numpy_array(self._neigh_matrix.cpu().numpy())
-        betweenness = nx.edge_betweenness_centrality(G, normalized=False)
-        nx.set_edge_attributes(G, betweenness, "betweenness")
-        return torch.triu(torch.from_numpy(nx.to_numpy_array(nx.minimum_spanning_tree(G, "betweenness"))).to(device=self._neigh_matrix.device), diagonal=1).bool()
+        OG = nx.from_numpy_array(self._neigh_matrix.cpu().numpy())
+        betweenness = nx.edge_betweenness_centrality(OG, normalized=False)
+        nx.set_edge_attributes(OG, betweenness, "OG")
+        N = OG.number_of_nodes()-1
+        G = nx.Graph(OG)
+        T = nx.Graph()
+        while T.number_of_edges() < N:
+            betweenness = nx.edge_betweenness_centrality(G, normalized=False)
+            nx.set_edge_attributes(G, betweenness, "temp")
+            edge_queue = sorted(G.edges.data(), key=lambda edge: (edge[2]["OG"], edge[2]["temp"]))
+            for u, v, _ in edge_queue:
+                try:
+                    temp = nx.Graph(T)
+                    temp.add_edge(u, v)
+                    nx.find_cycle(temp, u)
+                except nx.NetworkXNoCycle:
+                    G.remove_edge(u, v)
+                    T.add_edge(u, v)
+                    break
+        return torch.from_numpy(nx.to_numpy_array(T, dtype=bool)).to(device).triu_(diagonal=1)
 
 
     def _sample_init_population(self, N: int, T: int) -> Population:
@@ -54,13 +71,14 @@ class EA(BaseModel):
         path_edge_bandwidth_usage_size = torch.Size([self.population_size, N, N, N, N])
         path_edge_bandwidth_usage = self.path_edge_bandwidth_usage_init_distribution\
             .sample(path_edge_bandwidth_usage_size).float() # (P, N, N, N, N)
-        path_transponder_assignment_size = torch.Size([self.population_size, N, N, T])
+        path_transponder_assignment_size = torch.Size([self.population_size, T, N, N])
         path_transponder_assignment = self.path_transponder_assignment_init_distribution\
-            .sample(path_transponder_assignment_size).float() # (P, N, N, T)
+            .sample(path_transponder_assignment_size).float() # (P, T, N, N)
         return Population.masked(
             encrypted_neigh_matrix=encrypted_neigh_matrix,
             path_edge_bandwidth_usage=path_edge_bandwidth_usage,
-            path_transponder_assignment=path_transponder_assignment
+            path_transponder_assignment=path_transponder_assignment,
+            neigh_matrix=self._neigh_matrix
         )
     
     
@@ -76,18 +94,18 @@ class EA(BaseModel):
 
     @jaxtyped(typechecker=beartype)
     def _calculate_total_transponder_cost(self) -> Float[Tensor, "P"]:
-        path_costs = self._population.path_transponder_assignment @ self._transponder_costs # (P, N, N, T) @ (T) -> (P, N, N)
+        path_costs = self._population.path_transponder_assignment.permute(0,2,3,1) @ self._transponder_costs # (P, N, N, T) @ (T) -> (P, N, N)
         return path_costs.sum(dim=(1,2)) # (P, N, N).sum(dim=(1, 2)) -> (P,)
-    
-    def _count_num_of_encrypted_connections(self) -> Float:
-        return self._population.encrypted_neigh_matrix.sum().float() # (N, N).sum(dim=(1, 2)) -> float
 
     @jaxtyped(typechecker=beartype)
-    def _penalty(self) -> Float[Tensor, "P"]:
-        constraint_product = torch.prod(1-self._constraint_scores, dim=0) # (P)
+    def product_penalty(self) -> Float[Tensor, "P"]:
+        constraint_product = torch.prod(1-self._constraint_scores, dim=0)  # (P)
         return self._total_transponder_cost / constraint_product + self.global_constraint_weight * (1-constraint_product)
-        # w_constraint_total = self.constraint_weights_tensor @ constraint_scores # (P)
-        # return total_transponder_cost + w_constraint_total * (total_transponder_cost + self.global_constraint_weight)
+
+    @jaxtyped(typechecker=beartype)
+    def sum_penalty(self) -> Float[Tensor, "P"]:
+        w_constraint_total = self.constraint_weights_tensor @ self._constraint_scores  # (P)
+        return self._total_transponder_cost + w_constraint_total * (self._total_transponder_cost + self.global_constraint_weight)
     
     @jaxtyped(typechecker=beartype)
     def run(
@@ -95,11 +113,11 @@ class EA(BaseModel):
             neigh_matrix: Bool[Tensor, "N N"],
             demand: Float[Tensor, "N N"],
             transponder_costs: Float[Tensor, "T"],  
-            transponder_capacities: Float[Tensor, "T"]
+            transponder_capacities: Float[Tensor, "T"],
+            penalty_method: Literal["prod", "sum"] = "prod",
             ):
-        self._run_init(neigh_matrix, demand, transponder_costs, transponder_capacities)
+        self._run_init(neigh_matrix, demand, transponder_costs, transponder_capacities, penalty_method)
         visualize_population_individual(self._population, transponder_capacities, 0)
-		
         while all([cond.check(self._lowest_penalty, self._iteration_n) for cond in self.termination_conditions]):
             self._precalc()
             
@@ -118,9 +136,10 @@ class EA(BaseModel):
             
             self._postcalc()
 
-    def _run_init(self, neigh_matrix: Bool[Tensor, "N N"], demand: Float[Tensor, "N N"], transponder_costs: Float[Tensor, "T"], transponder_capacities: Float[Tensor, "T"]):
+    def _run_init(self, neigh_matrix: Bool[Tensor, "N N"], demand: Float[Tensor, "N N"], transponder_costs: Float[Tensor, "T"], transponder_capacities: Float[Tensor, "T"], penalty_method: Literal["prod", "sum"] = "prod"):
         if self.elite_size >= self.population_size:
             raise ValueError("Elite should be smaller than the population!")
+        self._penalty = self.sum_penalty if penalty_method=="sum" else self.product_penalty
         self._neigh_matrix = neigh_matrix
         self._demand = demand
         self._transponder_costs = transponder_costs
@@ -160,7 +179,7 @@ class EA(BaseModel):
             self.elite_size
         )
         for mutation in self.mutation_methods:
-            next_generation = mutation.mutate(next_generation, self.elite_size)
+            next_generation = mutation.mutate(next_generation, self.elite_size, self._neigh_matrix)
         self._population = next_generation
 
 class FastEA(EA):
