@@ -2,10 +2,8 @@ from typing import NamedTuple
 from jaxtyping import Bool, Float, jaxtyped
 from pydantic import computed_field
 from torch import Tensor
-import torch
 from beartype import beartype
 
-from net_opt.utils.torch_utils import multi_triu
 
 class Population(NamedTuple):
     encrypted_neigh_matrix: Bool[Tensor, "N N"]
@@ -16,19 +14,30 @@ class Population(NamedTuple):
 
     @classmethod
     @jaxtyped(typechecker=beartype)
-    def masked(cls, 
-               encrypted_neigh_matrix: Bool[Tensor, "N N"],
-               path_edge_bandwidth_usage: Float[Tensor, "P N N N N"],
-               path_transponder_assignment: Float[Tensor, "P T N N"],
-               neigh_matrix: Bool[Tensor, "N N"],
-               ):
-        path_edge_bandwidth_usage.triu_(diagonal=1) # mask undirected node pairs
-        path_edge_bandwidth_usage[:,(~neigh_matrix),:,:] = 0.0 # mask nonexistent edges
-        path_transponder_assignment.triu_(diagonal=1) # mask undirected node pairs, (P, T, *N, *N)
-        return cls(encrypted_neigh_matrix, path_edge_bandwidth_usage, path_transponder_assignment)
-    
+    def masked(
+        cls,
+        encrypted_neigh_matrix: Bool[Tensor, "N N"],
+        path_edge_bandwidth_usage: Float[Tensor, "P N N N N"],
+        path_transponder_assignment: Float[Tensor, "P T N N"],
+        neigh_matrix: Bool[Tensor, "N N"],
+    ):
+        # mask undirected node pairs
+        path_edge_bandwidth_usage.triu_(diagonal=1)
+        # mask nonexistent edges
+        path_edge_bandwidth_usage[:, (~neigh_matrix), :, :] = 0.0
+        # mask nonexistent edges
+        path_transponder_assignment.triu_(diagonal=1)
+        return cls(
+            encrypted_neigh_matrix,
+            path_edge_bandwidth_usage,
+            path_transponder_assignment,
+        )
+
     @computed_field
     @property
     @jaxtyped(typechecker=beartype)
     def edge_size_limits(self) -> Float[Tensor, "N N"]:
-        return (self.encrypted_neigh_matrix.float() * self.encrypted_bandwidth + (~self.encrypted_neigh_matrix).float() * self.regular_bandwidth)
+        return (
+            self.encrypted_neigh_matrix.float() * self.encrypted_bandwidth
+            + (~self.encrypted_neigh_matrix).float() * self.regular_bandwidth
+        )

@@ -8,6 +8,7 @@ from jaxtyping import Bool
 from net_opt.core.population import Population
 from net_opt.core.mutations.base_mutation import Mutation
 
+
 class GeneMutation(Mutation, BaseModel):
     """
     Applies element-wise "gene" mutation to non-elite individuals.
@@ -24,29 +25,58 @@ class GeneMutation(Mutation, BaseModel):
     - Random is a new value sampled from a given distribution.
     - neigh_matrix is a global mask to ensure graph validity.
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
     path_edge_bandwidth_usage_mut_proba: float
     path_transponder_assignment_mut_proba: float
 
-    def mutate(self, population : Population, elite_size: int, neigh_matrix: Bool[Tensor, "N N"]) -> Population:
+    def mutate(
+        self,
+        population: Population,
+        elite_size: int,
+        neigh_matrix: Bool[Tensor, "N N"],
+    ) -> Population:
         elite_paths = population.path_edge_bandwidth_usage[:elite_size]
-        elite_transponders = population.path_transponder_assignment[:elite_size]
+        elite_transponders = population.path_transponder_assignment[
+            :elite_size
+        ]
 
         non_elite_paths = population.path_edge_bandwidth_usage[elite_size:]
-        non_elite_transponders = population.path_transponder_assignment[elite_size:]
+        non_elite_transponders = population.path_transponder_assignment[
+            elite_size:
+        ]
 
-        paths_mut_idx = Bernoulli(self.path_edge_bandwidth_usage_mut_proba)\
-            .sample(non_elite_paths.size()).triu_(diagonal=1).bool() & neigh_matrix[None, :, :, None, None]
-        transponders_mut_idx = Bernoulli(self.path_transponder_assignment_mut_proba)\
-            .sample(non_elite_transponders.size()).triu_(diagonal=1).bool()
-        
-        #TODO: Masking with idx to not calculate random for 0 indices   
-        non_elite_paths[paths_mut_idx] = torch.poisson(non_elite_paths[paths_mut_idx]).clamp_(max=population.edge_size_limits[None, :, :, None, None].expand_as(non_elite_paths)[paths_mut_idx])
-        non_elite_transponders[transponders_mut_idx] = torch.poisson(non_elite_transponders[transponders_mut_idx])
-        
+        paths_mut_idx = (
+            Bernoulli(self.path_edge_bandwidth_usage_mut_proba)
+            .sample(non_elite_paths.size())
+            .triu_(diagonal=1)
+            .bool()
+            & neigh_matrix[None, :, :, None, None]
+        )
+        transponders_mut_idx = (
+            Bernoulli(self.path_transponder_assignment_mut_proba)
+            .sample(non_elite_transponders.size())
+            .triu_(diagonal=1)
+            .bool()
+        )
+
+        # TODO: Masking with idx to not calculate random for 0 indices
+        non_elite_paths[paths_mut_idx] = torch.poisson(
+            non_elite_paths[paths_mut_idx]
+        ).clamp_(
+            max=population.edge_size_limits[None, :, :, None, None].expand_as(
+                non_elite_paths
+            )[paths_mut_idx]
+        )
+        non_elite_transponders[transponders_mut_idx] = torch.poisson(
+            non_elite_transponders[transponders_mut_idx]
+        )
+
         new_paths = torch.cat((elite_paths, non_elite_paths), dim=0)
-        new_transponders = torch.cat((elite_transponders, non_elite_transponders), dim=0)
-        
+        new_transponders = torch.cat(
+            (elite_transponders, non_elite_transponders), dim=0
+        )
+
         return Population.masked(
             encrypted_neigh_matrix=population.encrypted_neigh_matrix,
             path_edge_bandwidth_usage=new_paths,
