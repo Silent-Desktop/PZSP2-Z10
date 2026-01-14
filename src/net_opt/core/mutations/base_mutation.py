@@ -1,5 +1,7 @@
 from abc import abstractmethod, ABC
 from net_opt.core.population import Population
+from jaxtyping import Bool
+from torch import Tensor
 
 class Mutation(ABC):
     @abstractmethod

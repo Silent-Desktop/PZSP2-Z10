@@ -109,31 +109,16 @@ def visualize_input_data(neigh_matrix: Bool[Tensor, "N N"], demand: Float[Tensor
     ax = axes[0, 0]
     ax.imshow(mat_np, cmap='Greys', interpolation='nearest')
     ax.set_title('Neighborhood Matrix (1 = Edge Exists)')
-    ax.set_xticks(np.arange(N))
-    ax.set_yticks(np.arange(N))
-    ax.set_xticklabels(node_labels)
-    ax.set_yticklabels(node_labels)
+    ax.set_xticks(np.arange(N), node_labels, rotation="vertical")
+    ax.set_yticks(np.arange(N), node_labels)
     
-    for i in range(N):
-        for j in range(N):
-            text_val = int(mat_np[i, j])
-            color = 'white' if text_val == 1 else 'black'
-            ax.text(j, i, text_val, ha='center', va='center', color=color)
     
     ax = axes[0, 1]
     cax2 = ax.imshow(dem_np, cmap='viridis', interpolation='nearest', vmin=0)
     ax.set_title('Demand Matrix (Bandwidth)')
-    ax.set_xticks(np.arange(N))
-    ax.set_yticks(np.arange(N))
-    ax.set_xticklabels(node_labels)
-    ax.set_yticklabels(node_labels)
+    ax.set_xticks(np.arange(N), node_labels, rotation="vertical")
+    ax.set_yticks(np.arange(N), node_labels)
     
-    for i in range(N):
-        for j in range(N):
-            val = dem_np[i, j]
-            if val > 0:
-                color = 'black' if cax2.norm(val) > 0.7 else 'white'
-                ax.text(j, i, f'{val:.0f}', ha='center', va='center', color=color)
     fig.colorbar(cax2, ax=ax, orientation='vertical', label='Bandwidth Demand')
 
     ax = axes[1, 0]

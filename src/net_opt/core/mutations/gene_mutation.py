@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from pydantic.config import ConfigDict
 import torch
 from torch.distributions.bernoulli import Bernoulli
+from torch import Tensor
+from jaxtyping import Bool
 
 from net_opt.core.population import Population
 from net_opt.core.mutations.base_mutation import Mutation

@@ -30,7 +30,6 @@ class Constraint(ABC, BaseModel):
         diff = diff_transform(a - b) 
         goal = torch.max(a, b)
         ratio = diff / goal
-        # this one has no mean for DependentDemand
         return ratio.nan_to_num_()
     
     @jaxtyped(typechecker=beartype)

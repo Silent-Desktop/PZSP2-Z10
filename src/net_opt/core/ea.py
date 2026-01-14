@@ -33,7 +33,7 @@ class EA(BaseModel):
     mutation_methods: list[Mutation] = Field(default_factory=lambda _: [])
 
     show_vizualisation_every_n_iter: int = 10000
-    
+    device: torch.device
 
     @computed_field
     @property
@@ -62,7 +62,7 @@ class EA(BaseModel):
                     G.remove_edge(u, v)
                     T.add_edge(u, v)
                     break
-        return torch.from_numpy(nx.to_numpy_array(T, dtype=bool)).to(device).triu_(diagonal=1)
+        return torch.from_numpy(nx.to_numpy_array(T, dtype=bool)).to(self.device).triu_(diagonal=1)
 
 
     def _sample_init_population(self, N: int, T: int) -> Population:

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from pydantic.config import ConfigDict
 import torch
 from torch.distributions.bernoulli import Bernoulli
-from jaxtyping import jaxtyped
+from jaxtyping import jaxtyped, Bool
 from torch import Tensor
 from beartype import beartype
 
