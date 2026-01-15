@@ -8,8 +8,8 @@ from net_opt.core.population import Population
 from net_opt.core.constraints.base_constraint import Constraint
 
 
-class PathTransponderBandwidthAtLeast(Constraint):
-    readable_name: str = "At Least As Many Paths As Transponders"
+class PathTransponderBandwidthWeak(Constraint):
+    readable_name: str = "Paths >= Transponders"
 
     @jaxtyped(typechecker=beartype)
     def check(

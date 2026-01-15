@@ -9,7 +9,7 @@ from net_opt.core.constraints.base_constraint import Constraint
 
 
 class PathBandwidthIOMatch(Constraint):
-    readable_name: str = "Path Bandwidth IO Match"
+    readable_name: str = "Path Source==Dest"
 
     @jaxtyped(typechecker=beartype)
     def check(

@@ -9,11 +9,11 @@ from net_opt.core.constraints.base_constraint import Constraint
 from net_opt.core.constraints.path_bandwidth_io_match import (
     PathBandwidthIOMatch,
 )
-from net_opt.core.constraints.path_transponder_bandwidth_at_least import (
-    PathTransponderBandwidthAtLeast,
+from net_opt.core.constraints.path_transponder_bandwidth_weak import (
+    PathTransponderBandwidthWeak,
 )
-from net_opt.core.constraints.path_edge_bandwidth_kirchhoff import (
-    PathEdgeBandwidthKirchhoff,
+from net_opt.core.constraints.path_edge_bandwidth_kirchhoff_match import (
+    PathEdgeBandwidthKirchhoffMatch,
 )
 
 
@@ -67,10 +67,10 @@ class DependentDemand(Constraint):
             PathBandwidthIOMatch()._check_all(
                 population, transponder_capacities, demand
             )
-            * PathTransponderBandwidthAtLeast()._check_all(
+            * PathTransponderBandwidthWeak()._check_all(
                 population, transponder_capacities, demand
             )
-            * PathEdgeBandwidthKirchhoff()
+            * PathEdgeBandwidthKirchhoffMatch()
             ._check_all(population, transponder_capacities, demand)
             .flatten(start_dim=3)
             .mean(dim=3)

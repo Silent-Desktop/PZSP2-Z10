@@ -1,4 +1,4 @@
-from typing import no_type_check
+from typing import no_type_check, Optional
 import numpy as np
 import matplotlib.pyplot as plt
 from jaxtyping import Bool, Float
@@ -13,7 +13,7 @@ def visualize_population_individual(
     population: Population,
     transponder_capacities: Float[Tensor, "T"],
     individual_index: int = 0,
-    title_suffix: str = "",
+    iteration: Optional[int] = None,
 ):
     if individual_index >= len(population.path_edge_bandwidth_usage):
         print(f"Error: individual_index {individual_index} out of range.")
@@ -50,13 +50,13 @@ def visualize_population_individual(
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     title = f"Visualization for Individual {individual_index}"
-    if title_suffix:
-        title = f"{title} ({title_suffix})"
+    if iteration is not None:
+        title += f", iteration {iteration}"
     fig.suptitle(title, fontsize=16)
 
     ax = axes[0, 0]
     ax.imshow(e_np, cmap="Greys", interpolation="nearest")
-    ax.set_title("Encrypted Adjacency Matrix (1 = Encrypted)")
+    ax.set_title("Encrypted Adjacency Matrix (Black = Encrypted)")
     ax.set_xticks(np.arange(N), node_labels, rotation="vertical")
     ax.set_yticks(np.arange(N), node_labels)
 
@@ -71,18 +71,24 @@ def visualize_population_individual(
     ax.set_title("Total Edge Bandwidth Usage (on physical edges)")
     ax.set_xticks(np.arange(N), node_labels, rotation="vertical")
     ax.set_yticks(np.arange(N), node_labels)
-    fig.colorbar(
+    cbar = fig.colorbar(
         cax2, ax=ax, orientation="vertical", label="Total Bandwidth Used"
     )
+    max_val = edge_np.max()
+    ticks = np.linspace(0, max_val, 9, dtype=int)
+    cbar.set_ticks(ticks)
 
     ax = axes[1, 0]
     cax3 = ax.imshow(path_np, cmap="plasma", interpolation="nearest", vmin=0)
     ax.set_title("Effective Path Capacity (per path i->j)")
     ax.set_xticks(np.arange(N), node_labels, rotation="vertical")
     ax.set_yticks(np.arange(N), node_labels)
-    fig.colorbar(
+    cbar = fig.colorbar(
         cax3, ax=ax, orientation="vertical", label="Effective Capacity"
     )
+    max_val = path_np.max()
+    ticks = np.linspace(0, max_val, 9, dtype=int)
+    cbar.set_ticks(ticks)
 
     ax = axes[1, 1]
     bars4 = ax.bar(trans_labels, trans_np, color="coral")
@@ -117,17 +123,22 @@ def visualize_input_data(
 
     ax = axes[0, 0]
     ax.imshow(mat_np, cmap="Greys", interpolation="nearest")
-    ax.set_title("Neighborhood Matrix (1 = Edge Exists)")
+    ax.set_title("Neighborhood Matrix (Black = Edge Exists)")
     ax.set_xticks(np.arange(N), node_labels, rotation="vertical")
     ax.set_yticks(np.arange(N), node_labels)
 
     ax = axes[0, 1]
-    cax2 = ax.imshow(dem_np, cmap="viridis", interpolation="nearest", vmin=0)
+    cax2 = ax.imshow(dem_np, cmap="plasma", interpolation="nearest", vmin=0)
     ax.set_title("Demand Matrix (Bandwidth)")
     ax.set_xticks(np.arange(N), node_labels, rotation="vertical")
     ax.set_yticks(np.arange(N), node_labels)
 
-    fig.colorbar(cax2, ax=ax, orientation="vertical", label="Bandwidth Demand")
+    cbar = fig.colorbar(
+        cax2, ax=ax, orientation="vertical", label="Bandwidth Demand"
+    )
+    max_val = dem_np.max()
+    ticks = np.linspace(0, max_val, 9, dtype=int)
+    cbar.set_ticks(ticks)
 
     ax = axes[1, 0]
     bars3 = ax.bar(trans_labels, costs_np, color="skyblue")

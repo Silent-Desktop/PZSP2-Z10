@@ -9,8 +9,8 @@ class Population(NamedTuple):
     encrypted_neigh_matrix: Bool[Tensor, "N N"]
     path_edge_bandwidth_usage: Float[Tensor, "P N N N N"]
     path_transponder_assignment: Float[Tensor, "P T N N"]
-    regular_bandwidth: int = 96
-    encrypted_bandwidth: int = 30
+    encrypted_bandwidth: int
+    regular_bandwidth: int
 
     @classmethod
     @jaxtyped(typechecker=beartype)
@@ -19,18 +19,22 @@ class Population(NamedTuple):
         encrypted_neigh_matrix: Bool[Tensor, "N N"],
         path_edge_bandwidth_usage: Float[Tensor, "P N N N N"],
         path_transponder_assignment: Float[Tensor, "P T N N"],
+        encrypted_bandwidth: int,
+        regular_bandwidth: int,
         neigh_matrix: Bool[Tensor, "N N"],
     ):
         # mask undirected node pairs
         path_edge_bandwidth_usage.triu_(diagonal=1)
         # mask nonexistent edges
         path_edge_bandwidth_usage[:, (~neigh_matrix), :, :] = 0.0
-        # mask nonexistent edges
+        # mask undirected node pairs
         path_transponder_assignment.triu_(diagonal=1)
         return cls(
             encrypted_neigh_matrix,
             path_edge_bandwidth_usage,
             path_transponder_assignment,
+            encrypted_bandwidth,
+            regular_bandwidth
         )
 
     @computed_field

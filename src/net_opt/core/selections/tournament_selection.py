@@ -54,4 +54,6 @@ class TournamentSelection(Selection, BaseModel):
             encrypted_neigh_matrix=population.encrypted_neigh_matrix,
             path_edge_bandwidth_usage=new_paths,
             path_transponder_assignment=new_transponders,
+            encrypted_bandwidth=population.encrypted_bandwidth,
+            regular_bandwidth=population.regular_bandwidth
         )

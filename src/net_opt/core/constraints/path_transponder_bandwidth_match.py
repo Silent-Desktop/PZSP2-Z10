@@ -9,7 +9,7 @@ from net_opt.core.constraints.base_constraint import Constraint
 
 
 class PathTransponderBandwidthMatch(Constraint):
-    readable_name: str = "Path Transponder Bandwidth Match"
+    readable_name: str = "Paths == Transponders"
 
     @jaxtyped(typechecker=beartype)
     def check(

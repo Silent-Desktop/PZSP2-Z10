@@ -8,8 +8,8 @@ from net_opt.core.population import Population
 from net_opt.core.constraints.base_constraint import Constraint
 
 
-class PathEdgeBandwidthKirchhoff(Constraint):
-    readable_name: str = "Path Edge Bandwidth Kirchhoff"
+class PathEdgeBandwidthKirchhoffMatch(Constraint):
+    readable_name: str = "Node In == Out"
 
     @jaxtyped(typechecker=beartype)
     def check(

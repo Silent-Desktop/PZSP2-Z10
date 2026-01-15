@@ -75,7 +75,9 @@ class EA(BaseModel):
             .triu_(diagonal=1)
         )
 
-    def _sample_init_population(self, N: int, T: int) -> Population:
+    def _sample_init_population(
+        self, N: int, T: int, encrypted_bandwidth: int, regular_bandwidth: int
+    ) -> Population:
         encrypted_neigh_matrix = self._get_encrypted_MST()
 
         path_edge_bandwidth_usage_size = torch.Size(
@@ -99,6 +101,8 @@ class EA(BaseModel):
             path_edge_bandwidth_usage=path_edge_bandwidth_usage,
             path_transponder_assignment=path_transponder_assignment,
             neigh_matrix=self._neigh_matrix,
+            encrypted_bandwidth=encrypted_bandwidth,
+            regular_bandwidth=regular_bandwidth,
         )
 
     @jaxtyped(typechecker=beartype)
@@ -145,6 +149,8 @@ class EA(BaseModel):
     @jaxtyped(typechecker=beartype)
     def run(
         self,
+        encrypted_bandwidth: int,
+        regular_bandwidth: int,
         neigh_matrix: Bool[Tensor, "N N"],
         demand: Float[Tensor, "N N"],
         transponder_costs: Float[Tensor, "T"],
@@ -152,6 +158,8 @@ class EA(BaseModel):
         penalty_method: Literal["prod", "sum"] = "prod",
     ):
         self._run_init(
+            encrypted_bandwidth,
+            regular_bandwidth,
             neigh_matrix,
             demand,
             transponder_costs,
@@ -159,7 +167,7 @@ class EA(BaseModel):
             penalty_method,
         )
         visualize_population_individual(
-            self._population, transponder_capacities, 0
+            self._population, transponder_capacities, 0, self._iteration_n
         )
         while all(
             [
@@ -167,29 +175,43 @@ class EA(BaseModel):
                 for cond in self.termination_conditions
             ]
         ):
-            self._precalc()
+            try:
+                self._precalc()
 
-            if self._iteration_n % self.show_vizualisation_every_n_iter == 0:
-                visualize_population_individual(
-                    self._population, self._transponder_capacities, 0
+                if (
+                    self._iteration_n % self.show_vizualisation_every_n_iter
+                    == 0
+                ):
+                    visualize_population_individual(
+                        self._population, self._transponder_capacities, 0, self._iteration_n
+                    )
+                dict_constraint_name_scores = {
+                    self.constraints[
+                        i
+                    ].readable_name: self._lowest_penalty_constraint_scores[i]
+                    for i in range(len(self._constraint_scores))
+                }
+                print("-" * 40)
+                print(f"it: {self._iteration_n}")
+                print(f"lowest_penalty: {self._lowest_penalty}")
+                print("lowest_penalty_constraint_scores:")
+                pp.pprint(dict_constraint_name_scores)
+                print(
+                    f"lowest_transponder_cost: {self._lowest_transponder_cost}"
                 )
-            dict_constraint_name_scores = {
-                self.constraints[
-                    i
-                ].readable_name: self._lowest_penalty_constraint_scores[i]
-                for i in range(len(self._constraint_scores))
-            }
-            print("-" * 40)
-            print(f"it: {self._iteration_n}")
-            print(f"lowest_penalty: {self._lowest_penalty}")
-            print("lowest_penalty_constraint_scores:")
-            pp.pprint(dict_constraint_name_scores)
-            print(f"lowest_transponder_cost: {self._lowest_transponder_cost}")
 
-            self._postcalc()
+                self._postcalc()
+            except KeyboardInterrupt:
+                print("===INTERRUPTED===")
+                visualize_population_individual(
+                    self._population, self._transponder_capacities, 0, self._iteration_n
+                )
+                return
 
     def _run_init(
         self,
+        encrypted_bandwidth: int,
+        regular_bandwidth: int,
         neigh_matrix: Bool[Tensor, "N N"],
         demand: Float[Tensor, "N N"],
         transponder_costs: Float[Tensor, "T"],
@@ -209,7 +231,9 @@ class EA(BaseModel):
         self._transponder_capacities = transponder_capacities
         N = self._neigh_matrix.size(0)
         T = transponder_capacities.size(0)
-        self._population = self._sample_init_population(N, T)
+        self._population = self._sample_init_population(
+            N, T, encrypted_bandwidth, regular_bandwidth
+        )
         self._lowest_penalty = float("inf")
         self._iteration_n = 0
         self._lowest_penalty_constraint_scores: list[float] = [
@@ -245,6 +269,8 @@ class EA(BaseModel):
             path_transponder_assignment=self._population.path_transponder_assignment[
                 sorted_indices
             ],
+            encrypted_bandwidth=self._population.encrypted_bandwidth,
+            regular_bandwidth=self._population.regular_bandwidth,
         )
         next_generation = self.selection_method.get_next_generation(
             sorted_population, sorted_penalties, self.elite_size
