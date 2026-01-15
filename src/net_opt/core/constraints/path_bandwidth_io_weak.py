@@ -8,8 +8,8 @@ from net_opt.core.population import Population
 from net_opt.core.constraints.base_constraint import Constraint
 
 
-class PathTransponderBandwidthAtLeast(Constraint):
-    readable_name: str = "At Least As Many Paths As Transponders"
+class PathBandwidthIOMatch(Constraint):
+    readable_name: str = "Path Bandwidth IO Match"
 
     @jaxtyped(typechecker=beartype)
     def check(
@@ -30,16 +30,13 @@ class PathTransponderBandwidthAtLeast(Constraint):
         demand: Float[Tensor, "N N"],
     ) -> Float[Tensor, "P N N"]:
         p = population.path_edge_bandwidth_usage
-        t = population.path_transponder_assignment
-        # just check for source
-        # because PathBandwidthIOMatch ensures IO equality
         source_output_sum = torch.einsum(
             "pkjkl -> pkl", p
         )  # (P, N, N, N, N) -> (P, N, N)
-        transponder_on_path_count = t.sum(dim=1)  # (P, T, N, N) -> (P, N, N)
-        # relu for paths >= transponders -> 0
+        dest_input_sum = torch.einsum(
+            "pilkl -> pkl", p
+        )  # (P, N, N, N, N) -> (P, N, N)
+        # "weak" version with relu -> 0 if source>=dst
         return self._calculate_similarity_scores_all(
-            transponder_on_path_count,
-            source_output_sum,
-            diff_transform=torch.relu,
+            dest_input_sum, source_output_sum
         )
