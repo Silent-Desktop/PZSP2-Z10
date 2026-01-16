@@ -29,6 +29,7 @@ class EA(BaseModel):
 
     global_constraint_weight: float = 10.0**5
     constraints: list[Constraint] = Field(default_factory=lambda _: [])
+    penalty_method: Literal["prod", "sum"] = "prod"
 
     termination_conditions: list[TerminationCondition] = Field(
         default_factory=lambda _: []
@@ -161,7 +162,6 @@ class EA(BaseModel):
         demand: Float[Tensor, "N N"],
         transponder_costs: Float[Tensor, "T"],
         transponder_capacities: Float[Tensor, "T"],
-        penalty_method: Literal["prod", "sum"] = "prod",
     ):
         self._run_init(
             encrypted_bandwidth,
@@ -170,7 +170,6 @@ class EA(BaseModel):
             demand,
             transponder_costs,
             transponder_capacities,
-            penalty_method,
         )
         visualize_population_individual(
             self._population, transponder_capacities, 0, self._iteration_n
@@ -228,13 +227,12 @@ class EA(BaseModel):
         demand: Float[Tensor, "N N"],
         transponder_costs: Float[Tensor, "T"],
         transponder_capacities: Float[Tensor, "T"],
-        penalty_method: Literal["prod", "sum"] = "prod",
     ):
         if self.elite_size >= self.population_size:
             raise ValueError("Elite should be smaller than the population!")
         self._penalty = (
             self.sum_penalty
-            if penalty_method == "sum"
+            if self.penalty_method == "sum"
             else self.product_penalty
         )
         self._demand = demand
