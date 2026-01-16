@@ -99,5 +99,5 @@ class UniformCrossover(Mutation, BaseModel):
             path_transponder_assignment=new_transponders,
             neigh_matrix=neigh_matrix,
             encrypted_bandwidth=population.encrypted_bandwidth,
-            regular_bandwidth=population.regular_bandwidth
+            regular_bandwidth=population.regular_bandwidth,
         )

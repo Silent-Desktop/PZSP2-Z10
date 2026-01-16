@@ -46,8 +46,10 @@ class EA(BaseModel):
         constraint_weights = [c.weight for c in self.constraints]
         return torch.tensor(constraint_weights, dtype=torch.float32)
 
-    def _get_encrypted_MST(self) -> Bool[Tensor, "N N"]:
-        OG = nx.from_numpy_array(self._neigh_matrix.cpu().numpy())
+    def _get_encrypted_MST(
+        self, neigh_matrix: Bool[Tensor, "N N"]
+    ) -> Bool[Tensor, "N N"]:
+        OG = nx.from_numpy_array(neigh_matrix.cpu().numpy())
         betweenness = nx.edge_betweenness_centrality(OG, normalized=False)
         nx.set_edge_attributes(OG, betweenness, "OG")
         N = OG.number_of_nodes() - 1
@@ -76,10 +78,14 @@ class EA(BaseModel):
         )
 
     def _sample_init_population(
-        self, N: int, T: int, encrypted_bandwidth: int, regular_bandwidth: int
+        self,
+        neigh_matrix: Bool[Tensor, "N N"],
+        T: int,
+        encrypted_bandwidth: int,
+        regular_bandwidth: int,
     ) -> Population:
-        encrypted_neigh_matrix = self._get_encrypted_MST()
-
+        encrypted_neigh_matrix = self._get_encrypted_MST(neigh_matrix)
+        N = neigh_matrix.size(0)
         path_edge_bandwidth_usage_size = torch.Size(
             [self.population_size, N, N, N, N]
         )
@@ -100,7 +106,7 @@ class EA(BaseModel):
             encrypted_neigh_matrix=encrypted_neigh_matrix,
             path_edge_bandwidth_usage=path_edge_bandwidth_usage,
             path_transponder_assignment=path_transponder_assignment,
-            neigh_matrix=self._neigh_matrix,
+            neigh_matrix=neigh_matrix,
             encrypted_bandwidth=encrypted_bandwidth,
             regular_bandwidth=regular_bandwidth,
         )
@@ -183,7 +189,10 @@ class EA(BaseModel):
                     == 0
                 ):
                     visualize_population_individual(
-                        self._population, self._transponder_capacities, 0, self._iteration_n
+                        self._population,
+                        self._transponder_capacities,
+                        0,
+                        self._iteration_n,
                     )
                 dict_constraint_name_scores = {
                     self.constraints[
@@ -204,7 +213,10 @@ class EA(BaseModel):
             except KeyboardInterrupt:
                 print("===INTERRUPTED===")
                 visualize_population_individual(
-                    self._population, self._transponder_capacities, 0, self._iteration_n
+                    self._population,
+                    self._transponder_capacities,
+                    0,
+                    self._iteration_n,
                 )
                 return
 
@@ -225,14 +237,12 @@ class EA(BaseModel):
             if penalty_method == "sum"
             else self.product_penalty
         )
-        self._neigh_matrix = neigh_matrix
         self._demand = demand
         self._transponder_costs = transponder_costs
         self._transponder_capacities = transponder_capacities
-        N = self._neigh_matrix.size(0)
         T = transponder_capacities.size(0)
         self._population = self._sample_init_population(
-            N, T, encrypted_bandwidth, regular_bandwidth
+            neigh_matrix, T, encrypted_bandwidth, regular_bandwidth
         )
         self._lowest_penalty = float("inf")
         self._iteration_n = 0
@@ -271,13 +281,14 @@ class EA(BaseModel):
             ],
             encrypted_bandwidth=self._population.encrypted_bandwidth,
             regular_bandwidth=self._population.regular_bandwidth,
+            neigh_matrix=self._population.neigh_matrix,
         )
         next_generation = self.selection_method.get_next_generation(
             sorted_population, sorted_penalties, self.elite_size
         )
         for mutation in self.mutation_methods:
             next_generation = mutation.mutate(
-                next_generation, self.elite_size, self._neigh_matrix
+                next_generation, self.elite_size, self._population.neigh_matrix
             )
         self._population = next_generation
 

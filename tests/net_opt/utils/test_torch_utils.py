@@ -4,8 +4,6 @@ import pytest
 from net_opt.utils.torch_utils import multi_triu
 
 
-
-
 class TestMultiTriu:
     """
     Test suite for the multi_triu function.
@@ -18,13 +16,11 @@ class TestMultiTriu:
         """
         x = torch.ones(3, 3)
         res = multi_triu(x, [(0, 1)], value=0.0)
-        
-        expected = torch.tensor([
-            [0., 1., 1.],
-            [0., 0., 1.],
-            [0., 0., 0.]
-        ])
-        
+
+        expected = torch.tensor(
+            [[0.0, 1.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
+        )
+
         torch.testing.assert_close(res, expected)
 
     def test_custom_value(self):
@@ -34,12 +30,9 @@ class TestMultiTriu:
         x = torch.ones(2, 2)
         fill_val = -5.0
         res = multi_triu(x, [(0, 1)], value=fill_val)
-        
-        expected = torch.tensor([
-            [fill_val, 1.0],
-            [fill_val, fill_val]
-        ])
-        
+
+        expected = torch.tensor([[fill_val, 1.0], [fill_val, fill_val]])
+
         torch.testing.assert_close(res, expected)
 
     def test_no_dim_pairs(self):
@@ -48,7 +41,7 @@ class TestMultiTriu:
         """
         x = torch.randn(3, 4, 5)
         res = multi_triu(x, [])
-        
+
         assert res is not x  # Must be a new object (clone)
         torch.testing.assert_close(res, x)
 
@@ -60,13 +53,11 @@ class TestMultiTriu:
         B, H, W = 2, 3, 3
         x = torch.ones(B, H, W)
         res = multi_triu(x, [(1, 2)], value=0.0)
-        
-        expected_slice = torch.tensor([
-            [0., 1., 1.],
-            [0., 0., 1.],
-            [0., 0., 0.]
-        ])
-        
+
+        expected_slice = torch.tensor(
+            [[0.0, 1.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
+        )
+
         for b in range(B):
             torch.testing.assert_close(res[b], expected_slice)
 
@@ -75,10 +66,10 @@ class TestMultiTriu:
         Test logic where multiple pairs are provided.
         """
         x = torch.ones(2, 2, 2)
-        
+
         pairs = [(0, 1), (1, 2)]
         res = multi_triu(x, pairs, value=0.0)
-        
+
         assert res[1, 1, 0] == 0.0
         assert res[0, 0, 1] == 1.0
 
@@ -96,9 +87,6 @@ class TestMultiTriu:
         """
         x = torch.ones(2, 3)
         res = multi_triu(x, [(0, 1)], value=0)
-        
-        expected = torch.tensor([
-            [0., 1., 1.],
-            [0., 0., 1.]
-        ])
+
+        expected = torch.tensor([[0.0, 1.0, 1.0], [0.0, 0.0, 1.0]])
         torch.testing.assert_close(res, expected)

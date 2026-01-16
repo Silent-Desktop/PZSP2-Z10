@@ -3,6 +3,7 @@ import numpy as np
 
 class SNDlib_Parser:
     """Parser for SNDlib's native file format"""
+
     def __init__(self, filename: str):
         self.filename = filename
         self._fh = open(filename)
@@ -95,4 +96,3 @@ class SNDlib_Parser:
 
     def __del__(self):
         self._fh.close()
-

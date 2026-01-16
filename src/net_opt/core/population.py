@@ -11,6 +11,7 @@ class Population(NamedTuple):
     path_transponder_assignment: Float[Tensor, "P T N N"]
     encrypted_bandwidth: int
     regular_bandwidth: int
+    neigh_matrix: Bool[Tensor, "N N"]
 
     @classmethod
     @jaxtyped(typechecker=beartype)
@@ -34,7 +35,8 @@ class Population(NamedTuple):
             path_edge_bandwidth_usage,
             path_transponder_assignment,
             encrypted_bandwidth,
-            regular_bandwidth
+            regular_bandwidth,
+            neigh_matrix,
         )
 
     @computed_field
