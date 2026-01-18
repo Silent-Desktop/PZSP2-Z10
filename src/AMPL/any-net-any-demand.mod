@@ -1,5 +1,5 @@
 set NODES;
-set EDGES;
+set EDGES within {i in NODES, j in NODES: i<j};
 set EDGE_FLOWS = {i in NODES, j in NODES: (i,j) in EDGES or (j,i) in EDGES};
 set CONNECTIONS = {i in NODES, j in NODES: i<j};
 set TRANSPONDERS;

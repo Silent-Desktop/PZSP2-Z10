@@ -1,15 +1,15 @@
 import pytest
 import torch
 from net_opt.core.constraints.path_edge_bandwidth_kirchhoff_match import (
-    PathEdgeBandwidthKirchhoff,
+    PathEdgeBandwidthKirchhoffMatch,
 )
 
 
-class TestPathEdgeBandwidthKirchhoff:
+class TestPathEdgeBandwidthKirchhoffMatch:
 
     @pytest.fixture
     def constraint(self):
-        return PathEdgeBandwidthKirchhoff()
+        return PathEdgeBandwidthKirchhoffMatch()
 
     @pytest.fixture
     def empty_inputs(self, sample_data):
@@ -75,8 +75,8 @@ class TestPathEdgeBandwidthKirchhoff:
         usage = torch.zeros(P, N, N, N, N)
 
         # Path 0->2
-        usage[0, 0, 2, 0, 1] = 100.0  # In to 1
-        usage[0, 0, 2, 1, 2] = 40.0  # Out from 1
+        usage[0, 0, 1, 0, 2] = 100.0  # In to 1
+        usage[0, 1, 2, 0, 2] = 40.0  # Out from 1
 
         # Diff = |100 - 40| = 60
         # Max = 100
@@ -85,7 +85,7 @@ class TestPathEdgeBandwidthKirchhoff:
         pop = population_factory(bandwidth_usage=usage)
         results = constraint._check_all(pop, **empty_inputs)
 
-        assert torch.isclose(results[0, 0, 2, 1], torch.tensor(0.6))
+        assert torch.isclose(results[0, 1, 0, 2], torch.tensor(0.6))
 
     def test_broken_multihop_flow_gain(
         self, constraint, population_factory, empty_inputs, sample_data
@@ -99,7 +99,7 @@ class TestPathEdgeBandwidthKirchhoff:
         usage = torch.zeros(P, N, N, N, N)
 
         # Path 0->2
-        usage[0, 0, 2, 1, 2] = 50.0
+        usage[0, 1, 2, 0, 2] = 50.0
         # In to 1 is 0.
 
         # Diff = |0 - 50| = 50
@@ -109,7 +109,7 @@ class TestPathEdgeBandwidthKirchhoff:
         pop = population_factory(bandwidth_usage=usage)
         results = constraint._check_all(pop, **empty_inputs)
 
-        assert results[0, 0, 2, 1] == 1.0
+        assert results[0, 1, 0, 2] == 1.0
 
     def test_check_aggregation(
         self, constraint, population_factory, empty_inputs, sample_data

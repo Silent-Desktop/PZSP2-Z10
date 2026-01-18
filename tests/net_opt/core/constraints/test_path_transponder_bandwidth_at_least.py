@@ -1,15 +1,15 @@
 import pytest
 import torch
 from net_opt.core.constraints.path_transponder_bandwidth_weak import (
-    PathTransponderBandwidthAtLeast,
+    PathTransponderBandwidthWeak,
 )
 
 
-class TestPathTransponderBandwidthAtLeast:
+class TestPathTransponderBandwidthWeak:
 
     @pytest.fixture
     def constraint(self):
-        return PathTransponderBandwidthAtLeast()
+        return PathTransponderBandwidthWeak()
 
     @pytest.fixture
     def empty_inputs(self, sample_data):
@@ -58,7 +58,7 @@ class TestPathTransponderBandwidthAtLeast:
 
         # Path 0->1
         usage[0, 0, 1, 0, 1] = 100.0
-        transponders[0, 0, 1, 0] = 100.0
+        transponders[0, 0, 0, 1] = 100.0
 
         pop = population_factory(
             bandwidth_usage=usage, path_transponder_assignment=transponders
@@ -82,7 +82,7 @@ class TestPathTransponderBandwidthAtLeast:
 
         # Path 0->1: Over-provisioned
         usage[0, 0, 1, 0, 1] = 50.0
-        transponders[0, 0, 1, 0] = 100.0
+        transponders[0, 0, 0, 1] = 100.0
 
         pop = population_factory(
             bandwidth_usage=usage, path_transponder_assignment=transponders
@@ -103,7 +103,7 @@ class TestPathTransponderBandwidthAtLeast:
 
         # Pop 1: Violation on ONE path (Path 0->1)
         # Transponders (10) > Usage (0). Score = 10/10 = 1.0.
-        transponders[1, 0, 1, 0] = 10.0
+        transponders[1, 0, 0, 1] = 10.0
         usage[1, 0, 1, 0, 1] = 0.0
 
         pop = population_factory(
