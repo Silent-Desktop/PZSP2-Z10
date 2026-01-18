@@ -119,7 +119,7 @@ class AMPL_Data_Creator:
     def _gen_matrix_demand(self, demand: NDArray):
         idx = np.triu_indices_from(demand, k=1)
         demand_lines = [
-            f"{i} {j} {demand[i,j]}" for i, j in zip(idx[0], idx[1])
+            f"{i} {j} {demand[i, j]}" for i, j in zip(idx[0], idx[1])
         ]
         demand_lines[-1] += ";"
         return ["param demand :="] + demand_lines

@@ -14,7 +14,9 @@ class SNDlib_Parser:
         try:
             len(self.node_ids)
             try:
-                return np.array(self.node_ids, dtype=int), np.array(self.edges, dtype=int)
+                return np.array(self.node_ids, dtype=int), np.array(
+                    self.edges, dtype=int
+                )
             except ValueError:  # nodes/edges not convertible to int
                 return np.arange(len(self.node_ids)), self._convert_edges()
         except TypeError:
@@ -31,7 +33,7 @@ class SNDlib_Parser:
                     "- or container for custom network!\n"
                     f"Found type: {type(self.node_ids)}"
                 )
-    
+
     def _convert_edges(self):
         return [
             (
@@ -129,5 +131,6 @@ class SNDlib_Parser:
 
     def __del__(self):
         self._fh.close()
+
 
 print(SNDlib_Parser("polska.txt").get_nodes_edges_as_ints())
