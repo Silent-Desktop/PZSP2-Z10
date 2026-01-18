@@ -63,7 +63,9 @@ class AMPL_Data_Creator:
         try:
             len(nodes)
             try:
-                return np.array(nodes, dtype=int), np.array(edges, dtype=int)
+                return np.array(nodes, dtype=int), [
+                    (int(edge[0]), int(edge[1])) for edge in edges
+                ]
             except ValueError:  # nodes/edges not convertible to int
                 return np.arange(len(nodes)), self._convert_edges(nodes, edges)
         except TypeError:
