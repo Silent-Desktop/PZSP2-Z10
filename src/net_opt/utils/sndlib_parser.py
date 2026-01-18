@@ -8,11 +8,44 @@ class SNDlib_Parser:
         self.filename = filename
         self._fh = open(filename)
 
+    def get_nodes_edges_as_ints(self):
+        if not self._fh.closed:
+            self.get_data()
+        try:
+            len(self.node_ids)
+            try:
+                return np.array(self.node_ids, dtype=int), np.array(self.edges, dtype=int)
+            except ValueError:  # nodes/edges not convertible to int
+                return np.arange(len(self.node_ids)), self._convert_edges()
+        except TypeError:
+            if int(self.node_ids) == self.node_ids and self.node_ids > 0:
+                try:
+                    arr = np.arange(self.node_ids)
+                    return arr, np.array(self.edges, dtype=int)
+                except ValueError:  # edges not convertible to int
+                    return arr, self._convert_edges()
+            else:
+                raise TypeError(
+                    f"Parameter `nodes` should be either:\n"
+                    "- a positive integer for generated values,\n"
+                    "- or container for custom network!\n"
+                    f"Found type: {type(self.node_ids)}"
+                )
+    
+    def _convert_edges(self):
+        return [
+            (
+                list(self.node_ids).index(self.edges[i][0]),
+                list(self.node_ids).index(self.edges[i][1]),
+            )
+            for i in range(len(self.edges))
+        ]
+
     def get_data(self):
         """Reads data from `self.filename`.
         Returns:
             - edge list
-            - node attribute dict
+            - node attribute dict (coordinates for networkx pos)
             - node id list
             - demand matrix (numpy array)"""
         if self._fh.closed:
@@ -96,3 +129,5 @@ class SNDlib_Parser:
 
     def __del__(self):
         self._fh.close()
+
+print(SNDlib_Parser("polska.txt").get_nodes_edges_as_ints())
