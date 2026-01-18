@@ -63,8 +63,9 @@ class AMPL_Data_Creator:
         try:
             len(nodes)
             try:
+                temp = [(int(edge[0]), int(edge[1])) for edge in edges]
                 return np.array(nodes, dtype=int), [
-                    (int(edge[0]), int(edge[1])) for edge in edges
+                    (min(edge), max(edge)) for edge in temp
                 ]
             except ValueError:  # nodes/edges not convertible to int
                 return np.arange(len(nodes)), self._convert_edges(nodes, edges)
@@ -84,13 +85,14 @@ class AMPL_Data_Creator:
                 )
 
     def _convert_edges(self, nodes, edges):
-        return [
+        temp = [
             (
                 list(nodes).index(edges[i][0]),
                 list(nodes).index(edges[i][1]),
             )
             for i in range(len(edges))
         ]
+        return [(min(edge), max(edge)) for edge in temp]
 
     def _transponders_array(self, transponders):
         try:
