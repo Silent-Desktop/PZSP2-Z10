@@ -131,6 +131,3 @@ class SNDlib_Parser:
 
     def __del__(self):
         self._fh.close()
-
-
-print(SNDlib_Parser("polska.txt").get_nodes_edges_as_ints())
