@@ -93,6 +93,7 @@ class AMPL_Data_Creator:
     def _transponders_array(self, transponders):
         try:
             len(transponders)
+            return np.array(transponders, dtype=str)
         except TypeError:
             if int(transponders) == transponders and transponders > 0:
                 return np.array(np.arange(transponders), dtype=str)
