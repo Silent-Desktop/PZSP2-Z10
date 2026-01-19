@@ -255,7 +255,6 @@ class EA(BaseModel):
             self._calculate_total_transponder_cost()
         )  # (P)
         self._penalties = self._penalty()
-        # TODO: no need to look through penalties twice. Refactor
         self._curr_lowest_penalty = self._penalties.min().item()
 
     def _postcalc(self):

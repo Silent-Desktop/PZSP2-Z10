@@ -60,7 +60,6 @@ class GeneMutation(Mutation, BaseModel):
             .bool()
         )
 
-        # TODO: Masking with idx to not calculate random for 0 indices
         non_elite_paths[paths_mut_idx] = torch.poisson(
             non_elite_paths[paths_mut_idx]
         ).clamp_(
