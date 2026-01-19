@@ -72,11 +72,10 @@ class EA(BaseModel):
                     G.remove_edge(u, v)
                     T.add_edge(u, v)
                     break
-        return (
-            torch.from_numpy(nx.to_numpy_array(T, dtype=bool))
-            .to(self.device)
-            .triu_(diagonal=1)
-        )
+        result = torch.zeros_like(neigh_matrix)
+        for e in T.edges:  # converting graph to numpy matrix directly caused bugs
+            result[min(e), max(e)] = 1
+        return result
 
     def _sample_init_population(
         self,
