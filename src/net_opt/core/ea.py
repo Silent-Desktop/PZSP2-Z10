@@ -39,6 +39,7 @@ class EA(BaseModel):
 
     show_vizualisation_every_n_iter: int = 10000
     device: torch.device
+    log_avg_fitness: bool = False
 
     @computed_field
     @property
@@ -73,7 +74,9 @@ class EA(BaseModel):
                     T.add_edge(u, v)
                     break
         result = torch.zeros_like(neigh_matrix)
-        for e in T.edges:  # converting graph to numpy matrix directly caused bugs
+        for (
+            e
+        ) in T.edges:  # converting graph to numpy matrix directly caused bugs
             result[min(e), max(e)] = 1
         return result
 
@@ -162,6 +165,9 @@ class EA(BaseModel):
         transponder_costs: Float[Tensor, "T"],
         transponder_capacities: Float[Tensor, "T"],
     ):
+        precalc_method = (
+            self._precalc_log if self.log_avg_fitness else self._precalc
+        )
         self._run_init(
             encrypted_bandwidth,
             regular_bandwidth,
@@ -180,8 +186,7 @@ class EA(BaseModel):
             ]
         ):
             try:
-                self._precalc()
-
+                precalc_method()
                 if (
                     self._iteration_n % self.show_vizualisation_every_n_iter
                     == 0
@@ -247,6 +252,15 @@ class EA(BaseModel):
             1.0 for _ in self.constraints
         ]
         self._lowest_transponder_cost = float("inf")
+        if self.log_avg_fitness:
+            self._log = []
+
+    def _do_log(self):
+        self._log.append(self._penalties.mean().item())
+
+    def _precalc_log(self):
+        self._precalc()
+        self._do_log()
 
     def _precalc(self):
         self._iteration_n += 1
@@ -298,6 +312,9 @@ class FastEA(EA):
         transponder_costs: Float[Tensor, "T"],
         transponder_capacities: Float[Tensor, "T"],
     ):
+        precalc_method = (
+            self._precalc_log if self.log_avg_fitness else self._precalc
+        )
         self._run_init(
             neigh_matrix, demand, transponder_costs, transponder_capacities
         )
@@ -307,5 +324,5 @@ class FastEA(EA):
                 for cond in self.termination_conditions
             ]
         ):
-            self._precalc()
+            precalc_method()
             self._postcalc()
