@@ -89,6 +89,19 @@ class SNDlib_Parser:
     def node_attrs(self) -> dict[str, dict[str, tuple[float, float]]]:
         return self._node_attrs
 
+    def get_int_node_attrs(self) -> dict[int, dict[str, tuple[float, float]]]:
+        if not self._fh.closed:
+            self.get_data()
+        try:
+            return dict(
+                (int(key), attr) for (key, attr) in self.node_attrs.items()
+            )
+        except ValueError:  # node not convertible to int
+            return dict(
+                (self.node_ids.index(key), attr)
+                for (key, attr) in self.node_attrs.items()
+            )
+
     @property
     def node_ids(self) -> list[str]:
         return self._node_ids
