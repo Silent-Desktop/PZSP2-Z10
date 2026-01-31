@@ -39,7 +39,7 @@ class EA(BaseModel):
 
     show_vizualisation_every_n_iter: int = 10000
     device: torch.device
-    log_avg_fitness: bool = False
+    log_fitness: bool = False
 
     @computed_field
     @property
@@ -166,7 +166,7 @@ class EA(BaseModel):
         transponder_capacities: Float[Tensor, "T"],
     ):
         precalc_method = (
-            self._precalc_log if self.log_avg_fitness else self._precalc
+            self._precalc_log if self.log_fitness else self._precalc
         )
         self._run_init(
             encrypted_bandwidth,
@@ -252,11 +252,15 @@ class EA(BaseModel):
             1.0 for _ in self.constraints
         ]
         self._lowest_transponder_cost = float("inf")
-        if self.log_avg_fitness:
-            self._log = []
+        if self.log_fitness:
+            self._log_avg = []
+            self._log_min = []
+            self._log_max = []
 
     def _do_log(self):
-        self._log.append(self._penalties.mean().item())
+        self._log_avg.append(self._penalties.mean().item())
+        self._log_min.append(self._penalties.min().item())
+        self._log_max.append(self._penalties.max().item())
 
     def _precalc_log(self):
         self._precalc()
@@ -311,12 +315,14 @@ class FastEA(EA):
         demand: Float[Tensor, "N N"],
         transponder_costs: Float[Tensor, "T"],
         transponder_capacities: Float[Tensor, "T"],
+        encrypted_bandwidth:int,
+        regular_bandwidth:int,
     ):
         precalc_method = (
-            self._precalc_log if self.log_avg_fitness else self._precalc
+            self._precalc_log if self.log_fitness else self._precalc
         )
         self._run_init(
-            neigh_matrix, demand, transponder_costs, transponder_capacities
+            encrypted_bandwidth,regular_bandwidth,neigh_matrix, demand, transponder_costs, transponder_capacities
         )
         while all(
             [
